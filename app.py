@@ -84,7 +84,8 @@ if st.button("Predict Emoji"):
         # First, get the predicted class NUMBER (e.g., 9)
         predicted_class_number = emoji_labels[predicted_index]
         # Then, use the map to get the EMOJI (e.g., '❤️')
-        final_emoji = emoji_map[predicted_class_number]
+        # Try to find the emoji. If not found, use '🤔' as a default.
+final_emoji = emoji_map.get(predicted_class_number, "🤔")
         
         # 5. Display the final emoji result
         st.success(f"Predicted Emoji: {final_emoji}")
