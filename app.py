@@ -6,6 +6,7 @@ import re
 import nltk
 from nltk.corpus import stopwords
 import numpy as np
+import pandas as pd # <-- Add this line
 
 # --- Pre-load necessary items ---
 # Download stopwords if not already present
@@ -14,11 +15,9 @@ try:
 except LookupError:
     nltk.download('stopwords')
 
-# Load the trained model using the new .keras format
-# Using st.cache_resource to load the model only once
+# Load the trained model
 @st.cache_resource
 def load_model():
-    # Make sure the filename matches the one you downloaded
     return tf.keras.models.load_model('emoji_predictor_model.keras')
 
 model = load_model()
@@ -31,7 +30,7 @@ def load_tokenizer():
 
 tokenizer = load_tokenizer()
 
-# Load the emoji labels
+# Load the emoji labels (which are numbers)
 @st.cache_data
 def load_labels():
     with open('emoji_labels.pickle', 'rb') as handle:
@@ -39,7 +38,18 @@ def load_labels():
 
 emoji_labels = load_labels()
 
-# Define the text cleaning function (must be identical to the one used in training)
+# Load the mapping from number to emoji character
+@st.cache_data
+def load_mapping():
+    mapping_df = pd.read_csv('Mapping.csv', header=None)
+    mapping_df.columns = ['number', 'emoji']
+    # Create a dictionary for easy lookup: {0: '❤️', 1: '😊', ...}
+    return pd.Series(mapping_df.emoji.values, index=mapping_df.number).to_dict()
+
+emoji_map = load_mapping()
+
+
+# Define the text cleaning function
 stop_words = set(stopwords.words('english'))
 def clean_and_process_text(text):
     text = text.lower()
@@ -60,21 +70,24 @@ if st.button("Predict Emoji"):
     if user_input:
         # 1. Clean the input text
         cleaned_input = clean_and_process_text(user_input)
-
+        
         # 2. Tokenize and pad the sequence
         seq = tokenizer.texts_to_sequences([cleaned_input])
-        # Note: This max_len should ideally match the one from your training data.
-        # You can find it in Colab with `X_train.shape[1]`. 40 is a safe default.
         max_len = 40 
         padded_seq = pad_sequences(seq, maxlen=max_len, padding='post')
-
+        
         # 3. Make a prediction
         prediction = model.predict(padded_seq)
         predicted_index = np.argmax(prediction)
-        predicted_emoji_class = emoji_labels[predicted_index]
-
-        # Display the result
-        st.success(f"Predicted Emoji: {predicted_emoji_class}")
+        
+        # 4. Translate the prediction
+        # First, get the predicted class NUMBER (e.g., 9)
+        predicted_class_number = emoji_labels[predicted_index]
+        # Then, use the map to get the EMOJI (e.g., '❤️')
+        final_emoji = emoji_map[predicted_class_number]
+        
+        # 5. Display the final emoji result
+        st.success(f"Predicted Emoji: {final_emoji}")
 
     else:
         st.warning("Please enter a sentence.")
