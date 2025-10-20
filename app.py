@@ -41,7 +41,7 @@ emoji_labels = load_labels()
 # Load the mapping from number to emoji character
 @st.cache_data
 def load_mapping():
-    mapping_df = pd.read_csv('Mapping.csv', header=None)
+    mapping_df = pd.read_csv('Mapping.csv', header=None, usecols=[0, 1])
     mapping_df.columns = ['number', 'emoji']
     # Create a dictionary for easy lookup: {0: '❤️', 1: '😊', ...}
     return pd.Series(mapping_df.emoji.values, index=mapping_df.number).to_dict()
