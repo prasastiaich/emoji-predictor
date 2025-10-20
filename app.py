@@ -41,11 +41,18 @@ emoji_labels = load_labels()
 # Load the mapping from number to emoji character
 @st.cache_data
 def load_mapping():
-    mapping_df = pd.read_csv('Mapping.csv', header=None, usecols=[0, 1])
-    mapping_df.columns = ['number', 'emoji']
-    # --- IMPORTANT: Ensure the 'number' column is treated as an integer ---
+    # --- FIX: Read the CSV using its header row (header=0) ---
+    # This correctly uses the column names from your file.
+    mapping_df = pd.read_csv('Mapping.csv', header=0)
+    
+    # Drop any rows that might be missing values in the essential columns.
+    mapping_df.dropna(subset=['number', 'emoticons'], inplace=True)
+    
+    # Now, it's safe to convert the 'number' column to the integer type.
     mapping_df['number'] = mapping_df['number'].astype(int)
-    return pd.Series(mapping_df.emoji.values, index=mapping_df.number).to_dict()
+    
+    # Create the dictionary from the 'number' and 'emoticons' columns.
+    return pd.Series(mapping_df.emoticons.values, index=mapping_df.number).to_dict()
 
 emoji_map = load_mapping()
 
@@ -78,20 +85,7 @@ if st.button("Predict Emoji"):
         
         predicted_class_number = emoji_labels[predicted_index]
 
-        # --- DEBUGGING OUTPUTS ---
-        st.subheader("🕵️ Debugging Info")
-        st.write(f"**Model Output Index:** `{predicted_index}`")
-        st.write(f"**Predicted Class Number (from emoji_labels):** `{predicted_class_number}`")
-        st.write(f"**Type of Predicted Class Number:** `{type(predicted_class_number)}`")
-        
-        # Display a sample of the emoji map to check its keys and types
-        st.write("**Sample of Emoji Map Keys & Values:**")
-        st.json({k: emoji_map[k] for k in list(emoji_map)[:5]}, expanded=False)
-        # --- END DEBUGGING ---
-
-        # --- THE FIX ---
-        # We convert the predicted number to a standard Python integer before lookup.
-        # This solves the likely data type mismatch (e.g., numpy.int64 vs int).
+        # Convert the predicted number to a standard Python integer to ensure the lookup works.
         final_emoji = emoji_map.get(int(predicted_class_number), "🤔")
         
         st.success(f"Predicted Emoji: {final_emoji}")
