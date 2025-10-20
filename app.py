@@ -6,7 +6,7 @@ import re
 import nltk
 from nltk.corpus import stopwords
 import numpy as np
-import pandas as pd # <-- Add this line
+import pandas as pd
 
 # --- Pre-load necessary items ---
 # Download stopwords if not already present
@@ -18,6 +18,7 @@ except LookupError:
 # Load the trained model
 @st.cache_resource
 def load_model():
+    # Make sure the path to your model file is correct
     return tf.keras.models.load_model('emoji_predictor_model.keras')
 
 model = load_model()
@@ -25,6 +26,7 @@ model = load_model()
 # Load the tokenizer
 @st.cache_data
 def load_tokenizer():
+    # Make sure the path to your tokenizer file is correct
     with open('tokenizer.pickle', 'rb') as handle:
         return pickle.load(handle)
 
@@ -33,6 +35,7 @@ tokenizer = load_tokenizer()
 # Load the emoji labels (which are numbers)
 @st.cache_data
 def load_labels():
+    # Make sure the path to your labels file is correct
     with open('emoji_labels.pickle', 'rb') as handle:
         return pickle.load(handle)
 
@@ -41,6 +44,7 @@ emoji_labels = load_labels()
 # Load the mapping from number to emoji character
 @st.cache_data
 def load_mapping():
+    # Make sure the path to your Mapping.csv file is correct
     mapping_df = pd.read_csv('Mapping.csv', header=None, usecols=[0, 1])
     mapping_df.columns = ['number', 'emoji']
     # Create a dictionary for easy lookup: {0: '❤️', 1: '😊', ...}
@@ -83,9 +87,11 @@ if st.button("Predict Emoji"):
         # 4. Translate the prediction
         # First, get the predicted class NUMBER (e.g., 9)
         predicted_class_number = emoji_labels[predicted_index]
+        
         # Then, use the map to get the EMOJI (e.g., '❤️')
         # Try to find the emoji. If not found, use '🤔' as a default.
-final_emoji = emoji_map.get(predicted_class_number, "🤔")
+        # --- FIX: This line was un-indented. It now correctly sits inside this 'if' block. ---
+        final_emoji = emoji_map.get(predicted_class_number, "🤔")
         
         # 5. Display the final emoji result
         st.success(f"Predicted Emoji: {final_emoji}")
